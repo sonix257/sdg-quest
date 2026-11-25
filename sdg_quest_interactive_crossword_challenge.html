@@ -1,0 +1,2176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SDG Quest - Interactive Crossword Challenge</title>
+  <style>
+    :root {
+      --navy: #14264b;
+      --blue: #2367a5;
+      --sky: #76d7f2;
+      --yellow: #ffd447;
+      --pink: #ff78a8;
+      --green: #66d69a;
+      --cream: #fff9e9;
+      --ink: #1b3155;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      font-family: 'Trebuchet MS', Arial, sans-serif;
+      background:
+        radial-gradient(circle at 12% 15%, #315f9d 0 2%, transparent 18%),
+        radial-gradient(circle at 90% 85%, #1d6e7c 0 2%, transparent 22%),
+        linear-gradient(135deg, #102347, #1b3d6c);
+      color: white;
+      overflow-x: hidden;
+    }
+
+    .stage {
+      width: 100%;
+      max-width: 100vw;
+      height: 100dvh;
+      min-height: 100vh;
+      padding: 8px 12px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 8px;
+      border-top: 6px solid #f4f6fb;
+      overflow: hidden;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .mascot {
+      display: grid;
+      place-items: center;
+      width: clamp(28px, 2.6vw, 42px);
+      height: clamp(28px, 2.6vw, 42px);
+      flex-shrink: 0;
+      filter: drop-shadow(0 3px 0 #0a1933);
+    }
+
+    .sdg-wheel-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    h1 {
+      font-size: clamp(16px, 1.85vw, 26px);
+      margin: 0;
+      color: #fff4c8;
+      text-shadow: 2px 3px 0 #122747;
+      letter-spacing: 0.6px;
+      white-space: nowrap;
+    }
+
+    .header-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-left: auto;
+    }
+
+    .top-pill {
+      background: #fff4d5;
+      color: #20395f;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-weight: 1000;
+      font-size: clamp(11px, 0.95vw, 15px);
+      box-shadow: 0 3px 0 #c39b39;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .top-pill.gold {
+      background: #ffd447;
+      box-shadow: 0 3px 0 #b98622;
+    }
+
+    .main {
+      min-height: 0;
+      min-width: 0;
+      width: 100%;
+      display: grid;
+      grid-template-columns: minmax(0, 2.05fr) minmax(260px, 0.85fr);
+      gap: 10px;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.12);
+      border: 2px solid rgba(255, 255, 255, 0.22);
+      border-radius: 18px;
+      padding: 8px 10px;
+      box-shadow: 0 6px 0 rgba(4, 15, 38, 0.22);
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .board-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 8px;
+      gap: 6px;
+    }
+
+    .board-wrap {
+      flex: 1;
+      min-height: 0;
+      min-width: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+      padding: 0;
+    }
+
+    /* Hidden mobile input proxy so tapping a grid cell brings up the virtual keyboard on touch devices */
+    #mobile-proxy {
+      position: fixed;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+      top: 50%;
+      left: 50%;
+      border: 0;
+      padding: 0;
+      font-size: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(32, minmax(0, 1fr));
+      grid-template-rows: repeat(17, minmax(0, 1fr));
+      gap: 2px;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+      max-height: 100%;
+      aspect-ratio: 32 / 17;
+      user-select: none;
+    }
+
+    .cell {
+      position: relative;
+      border-radius: 4px;
+      background: #f8fbff;
+      border: 1.5px solid #c8e2f4;
+      display: grid;
+      place-items: center;
+      color: #172b4d;
+      font-weight: 1000;
+      font-size: clamp(9px, 1.35vw, 22px);
+      min-width: 0;
+      min-height: 0;
+      box-shadow: 0 1.5px 0 #9dbbd4;
+      cursor: pointer;
+      transition: background-color 0.14s ease, transform 0.1s ease, border-color 0.14s ease;
+    }
+
+    .cell:not(.blank):hover {
+      background: #e6f4ff;
+      border-color: #76d7f2;
+    }
+
+    .cell.blank {
+      background: rgba(7, 18, 42, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: none;
+      cursor: inherit;
+    }
+
+    .cell .num {
+      position: absolute;
+      top: 1px;
+      left: 2px;
+      font-size: clamp(5px, 0.58vw, 10px);
+      line-height: 1;
+      color: #43617e;
+      font-weight: 900;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .cell .val {
+      display: block;
+      line-height: 1;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .cell.word-active {
+      background: #d7f3ff;
+      border-color: #5bc8f0;
+    }
+
+    .cell.filled {
+      background: #ffe27b;
+      border-color: #f3b92b;
+      color: #162b4d;
+      box-shadow: 0 2px 0 #c9931c;
+    }
+
+    .cell.filled.word-active {
+      background: #ffea9f;
+      border-color: #ff78a8;
+    }
+
+    .cell.cursor {
+      background: #ff8bb3 !important;
+      border-color: #ffffff !important;
+      color: #14264b !important;
+      outline: 2.5px solid #ffd447;
+      outline-offset: 0.5px;
+      z-index: 5;
+      transform: scale(1.06);
+    }
+
+    .cell.wrong-shake {
+      animation: wrongShake 0.35s ease;
+      background: #ffd1dc !important;
+      border-color: #ff4d79 !important;
+    }
+
+    .cell.pop-anim {
+      animation: pop 0.25s ease;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.16); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes wrongShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-3px); }
+      50% { transform: translateX(3px); }
+      75% { transform: translateX(-2px); }
+    }
+
+    .side {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 8px;
+      min-height: 0;
+      min-width: 0;
+    }
+
+    .cluebox {
+      background: #fff9e9;
+      color: #1b3155;
+      border-radius: 18px;
+      padding: 14px 14px;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 5px 0 #b7a46e;
+      overflow-y: auto;
+    }
+
+    .clue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .clue-tag {
+      color: #c04c7b;
+      font-size: clamp(11px, 0.95vw, 14px);
+      font-weight: 1000;
+      letter-spacing: 1.5px;
+    }
+
+    .dir-badge {
+      background: #2367a5;
+      color: #fff;
+      font-size: clamp(10px, 0.78vw, 12px);
+      font-weight: 900;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .clue-text {
+      font-size: clamp(13px, 1.15vw, 19px);
+      font-weight: 800;
+      line-height: 1.35;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    select, input[type="text"], input[type="password"] {
+      width: 100%;
+      border: 2px solid #9fc9e8;
+      border-radius: 11px;
+      padding: 9px 12px;
+      font-size: clamp(13px, 1vw, 15px);
+      font-weight: 800;
+      color: #1b3155;
+      background: white;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    select:focus, input[type="text"]:focus, input[type="password"]:focus {
+      border-color: #ff78a8;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 8px 11px;
+      font-size: clamp(10px, 0.8vw, 13px);
+      font-weight: 1000;
+      cursor: pointer;
+      color: #183055;
+      background: #ffd447;
+      box-shadow: 0 3px 0 #b88924;
+      transition: transform 0.1s, filter 0.1s;
+    }
+
+    button:hover {
+      filter: brightness(1.04);
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #b88924;
+    }
+
+    button.blue {
+      background: #7ee0f4;
+      box-shadow: 0 3px 0 #348da7;
+    }
+
+    button.pink {
+      background: #ff8bb3;
+      box-shadow: 0 3px 0 #bd527d;
+    }
+
+    button.green {
+      background: #7ce0a6;
+      box-shadow: 0 3px 0 #3b9b69;
+    }
+
+    button.dark {
+      background: #2b4774;
+      color: white;
+      box-shadow: 0 3px 0 #13284a;
+    }
+
+    .feedback {
+      font-size: clamp(11px, 0.85vw, 13.5px);
+      font-weight: 900;
+      min-height: 18px;
+      color: #1e5b94;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.2);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .progress > span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, #66d69a, #ffd447);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    /* Mobile & Tablet Responsive Layout */
+    @media (max-width: 820px) {
+      .stage {
+        height: auto;
+        min-height: 100dvh;
+        overflow-y: auto;
+        grid-template-rows: auto auto;
+        padding: 8px;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+      }
+
+      .board-card {
+        min-height: 240px;
+      }
+
+      .grid {
+        gap: 1px;
+      }
+
+      .cell {
+        border-radius: 2px;
+        border-width: 1px;
+        font-size: clamp(8px, 2.4vw, 14px);
+      }
+
+      .cell .num {
+        font-size: 5px;
+        top: 0.5px;
+        left: 1px;
+      }
+
+      .side {
+        grid-template-rows: auto auto;
+      }
+
+      .clue-text {
+        min-height: 44px;
+      }
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 15, 35, 0.84);
+      display: none;
+      place-items: center;
+      z-index: 20;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .modal.show {
+      display: grid;
+    }
+
+    .podium {
+      background: #fff9e9;
+      color: #20395f;
+      border-radius: 24px;
+      padding: 26px;
+      max-width: 560px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 0 #b58b35;
+    }
+
+    .podium h2 {
+      font-size: clamp(22px, 3vw, 36px);
+      margin: 0 0 12px;
+      color: #d45c8a;
+    }
+
+    .podium p {
+      font-weight: 900;
+      font-size: clamp(14px, 1.2vw, 18px);
+      line-height: 1.5;
+    }
+
+    .form-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+      margin-top: 14px;
+    }
+
+    .discrete-link {
+      background: none;
+      box-shadow: none;
+      color: #46658c;
+      font-size: 12px;
+      text-decoration: underline;
+      padding: 6px;
+      margin-top: 8px;
+    }
+
+    .discrete-link:hover {
+      color: #14264b;
+      filter: none;
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.16);
+      color: #fff4c8;
+      box-shadow: 0 3px 0 rgba(4, 15, 38, 0.3);
+      padding: 4px;
+      border-radius: 999px;
+      font-size: clamp(12px, 1vw, 15px);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 0;
+    }
+
+    .school-seal {
+      display: block;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+      flex-shrink: 0;
+    }
+
+    .teacher-panel {
+      background: #fff9e9;
+      color: #1b3155;
+      border-radius: 22px;
+      padding: 20px;
+      width: min(980px, 96vw);
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: 0 10px 0 #b58b35;
+      text-align: left;
+    }
+
+    .teacher-top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .teacher-top h2 {
+      margin: 0;
+      font-size: clamp(18px, 2vw, 25px);
+      color: #14264b;
+    }
+
+    .teacher-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .teacher-filters input {
+      width: auto;
+      min-width: 180px;
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+
+    .teacher-filters select {
+      width: auto;
+      padding: 7px 11px;
+      font-size: 13px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 2px solid #d5e4f2;
+      border-radius: 14px;
+      background: white;
+      flex: 1;
+      min-height: 200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #e6eef7;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      background: #1b3d6c;
+      color: #fff4c8;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-weight: 900;
+    }
+
+    tr:hover td {
+      background: #f4faff;
+    }
+
+    .badge {
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 900;
+      display: inline-block;
+    }
+
+    .badge.done {
+      background: #66d69a;
+      color: #0e3822;
+    }
+
+    .badge.live {
+      background: #ffd447;
+      color: #423004;
+    }
+
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #66d69a;
+      display: inline-block;
+    }
+
+    .sync-box {
+      background: #f2f8ff;
+      border: 2px solid #c8e2f4;
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .sync-box.open {
+      display: flex;
+    }
+
+    .sync-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .sync-row input {
+      flex: 1;
+      min-width: 220px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .hint-note {
+      font-size: 11px;
+      color: #536a8a;
+      margin: 0;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hidden input to trigger soft keyboard on mobile/tablet when tapping grid cells -->
+  <input id="mobile-proxy" type="text" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" aria-label="Grid typing helper">
+
+  <div class="stage" id="stage">
+    <header>
+      <div class="brand">
+        <div class="mascot" aria-label="Sustainable Development Goals Wheel">
+          <svg class="sdg-wheel-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="60" cy="60" r="58" fill="#ffffff"/>
+            <g id="sdg-wheel-header"></g>
+            <circle cx="60" cy="60" r="29" fill="#ffffff"/>
+            <text x="60" y="57" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="11.5" fill="#1c75bc">SDG</text>
+            <text x="60" y="68" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="6.2" fill="#46658c" letter-spacing="0.4">GOALS</text>
+          </svg>
+        </div>
+        <h1>SDG QUEST</h1>
+      </div>
+      <div class="header-stats">
+        <div class="top-pill" id="student-pill" style="display:none;">
+          <span class="sync-dot" id="sync-dot"></span>
+          <span id="student-label">Student</span>
+        </div>
+        <div class="top-pill">⏱ <span id="timer">05:00</span></div>
+        <div class="top-pill gold">⭐ <span id="score">0</span> PTS</div>
+        <button class="icon-btn" id="open-teacher-hdr" title="Teacher Monitor" aria-label="Teacher Monitor">
+          <svg class="school-seal" width="34" height="34" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <path id="glgmnhs-top-arc" d="M 28,112 A 73,73 0 1,1 172,112" />
+              <path id="glgmnhs-bot-arc" d="M 42,148 A 74,74 0 0,0 158,148" />
+              <clipPath id="glgmnhs-inner-clip">
+                <circle cx="100" cy="100" r="56" />
+              </clipPath>
+            </defs>
+            <circle cx="100" cy="100" r="98" fill="#7a0c14" />
+            <circle cx="100" cy="100" r="91" fill="#ffffff" />
+            <text fill="#7a0c14" font-family="Arial Narrow, Arial, sans-serif" font-weight="900" font-size="13.2" letter-spacing="0.4">
+              <textPath href="#glgmnhs-top-arc" startOffset="50%" text-anchor="middle">GEN. LICERIO GERONIMO MEMORIAL NATIONAL HIGH SCHOOL</textPath>
+            </text>
+            <path d="M 62,163 A 72,72 0 0,0 138,163" fill="none" stroke="#7a0c14" stroke-width="1.6" />
+            <path d="M 56,174 A 82,82 0 0,0 144,174" fill="none" stroke="#7a0c14" stroke-width="1.6" />
+            <text fill="#7a0c14" font-family="Arial Narrow, Arial, sans-serif" font-weight="800" font-size="10.2" letter-spacing="0.7">
+              <textPath href="#glgmnhs-bot-arc" startOffset="50%" text-anchor="middle">MONTALBAN, RIZAL</textPath>
+            </text>
+            <circle cx="100" cy="100" r="58.5" fill="none" stroke="#7a0c14" stroke-width="4" />
+            <g clip-path="url(#glgmnhs-inner-clip)">
+              <rect x="40" y="40" width="120" height="120" fill="#ffffff" />
+              <g stroke="#7a0c14" stroke-width="1.8" stroke-linecap="round">
+                <line x1="100" y1="82" x2="100" y2="48" />
+                <line x1="100" y1="82" x2="80" y2="52" />
+                <line x1="100" y1="82" x2="120" y2="52" />
+                <line x1="100" y1="82" x2="66" y2="66" />
+                <line x1="100" y1="82" x2="134" y2="66" />
+              </g>
+              <circle cx="100" cy="86" r="17" fill="#ffffff" stroke="#7a0c14" stroke-width="2" />
+              <path d="M 42,66 L 62,56 L 72,70 L 82,92 L 72,126 L 42,126 Z" fill="#7a0c14" />
+              <path d="M 158,64 L 138,58 L 128,74 L 120,96 L 128,126 L 158,126 Z" fill="#7a0c14" />
+              <line x1="44" y1="130" x2="156" y2="130" stroke="#7a0c14" stroke-width="1.8" />
+              <line x1="52" y1="135" x2="148" y2="135" stroke="#7a0c14" stroke-width="1.4" />
+              <line x1="62" y1="140" x2="138" y2="140" stroke="#7a0c14" stroke-width="1.2" />
+              <path d="M 100,67 C 107,75 110,82 105,88 C 107,83 103,79 100,76 C 97,80 96,84 98,88 C 91,84 92,75 100,67 Z" fill="#7a0c14" />
+              <path d="M 91,89 L 109,89 L 105,96 L 95,96 Z" fill="#7a0c14" />
+              <rect x="97" y="96" width="6" height="36" fill="#7a0c14" />
+              <path d="M 65,100 Q 82,96 100,103 Q 118,96 135,100 L 141,126 Q 119,121 100,128 Q 81,121 59,126 Z" fill="#ffffff" stroke="#7a0c14" stroke-width="3" stroke-linejoin="round" />
+              <line x1="100" y1="103" x2="100" y2="128" stroke="#7a0c14" stroke-width="2.2" />
+              <path d="M 72,107 Q 84,105 94,109 M 70,113 Q 84,111 94,115 M 68,119 Q 84,117 94,121" fill="none" stroke="#7a0c14" stroke-width="1.4" />
+              <path d="M 128,107 Q 116,105 106,109 M 130,113 Q 116,111 106,115 M 132,119 Q 116,117 106,121" fill="none" stroke="#7a0c14" stroke-width="1.4" />
+              <text x="100" y="151" text-anchor="middle" fill="#7a0c14" font-family="Impact, Arial Black, sans-serif" font-size="13" letter-spacing="0.5">1990</text>
+            </g>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="main">
+      <!-- Crossword Board Section -->
+      <section class="card board-card">
+        <div class="board-wrap" id="board-wrap">
+          <div class="grid" id="grid" role="grid" aria-label="SDG Crossword Grid"></div>
+        </div>
+        <div class="progress"><span id="bar"></span></div>
+      </section>
+
+      <!-- Side Controls & Clue Box -->
+      <aside class="side">
+        <section class="cluebox">
+          <div class="clue-header">
+            <div class="clue-tag" id="direction">ACROSS</div>
+            <span class="dir-badge" id="toggle-dir" title="Switch Across/Down">⇄ Switch Dir</span>
+          </div>
+
+          <select id="pick" aria-label="Choose a clue"></select>
+
+          <div class="clue-text" id="clue">Click any square to begin.</div>
+
+          <input id="answer" type="text" placeholder="Type answer or click grid..." autocomplete="off" aria-label="Answer input">
+
+          <div class="buttons">
+            <button id="fill" class="green">✨ Enter</button>
+            <button id="hint" class="pink">💡 Hint (5)</button>
+            <button id="clear" class="blue">Clear Word</button>
+          </div>
+
+          <button id="finish" class="green" style="width: 100%; padding: 14px 18px; font-size: clamp(15px, 1.25vw, 19px); letter-spacing: 1px; margin-top: 2px;">🏆 FINISH &amp; SUBMIT</button>
+
+          <div class="feedback" id="feedback" aria-live="polite"></div>
+        </section>
+
+        <section class="card">
+          <div class="buttons" style="display: flex; align-items: stretch; gap: 8px;">
+            <button id="sound" class="dark" style="flex: 1; padding: 10px 12px; font-size: clamp(12px, 0.9vw, 14px);">🔊 Sound</button>
+            <button id="new-student-btn" class="blue" style="flex: 1; padding: 10px 12px; font-size: clamp(12px, 0.9vw, 14px);">👤 Switch Student</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Completion Modal -->
+  <div class="modal" id="modal">
+    <div class="podium">
+      <h2>🏆 AMAZING WORK! 🏆</h2>
+      <p id="finaltext">Your final score is ready!</p>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:16px;">
+        <button id="play-again-btn" class="green" style="padding: 11px 22px; font-size: 14px;">🔄 New Student / Play Again</button>
+        <button id="exit-game" class="pink" style="padding: 11px 22px; font-size: 14px;">🚪 EXIT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Student Entry Modal -->
+  <div class="modal show" id="login-modal">
+    <div class="podium" style="max-width: 420px;">
+      <div style="width:74px;height:74px;margin:0 auto 8px;filter:drop-shadow(0 4px 0 rgba(20,38,75,0.18));">
+        <svg class="sdg-wheel-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="60" cy="60" r="58" fill="#ffffff"/>
+          <g id="sdg-wheel-login"></g>
+          <circle cx="60" cy="60" r="29" fill="#ffffff"/>
+          <text x="60" y="57" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="11.5" fill="#1c75bc">SDG</text>
+          <text x="60" y="68" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="6.2" fill="#46658c" letter-spacing="0.4">GOALS</text>
+        </svg>
+      </div>
+      <h2>SDG QUEST</h2>
+      <form id="login-form" class="form-stack">
+        <input id="stu-name" type="text" placeholder="Enter Full Name (e.g., Juan Dela Cruz)" required autocomplete="name">
+        <input id="stu-section" type="text" placeholder="Grade & Section (e.g., Grade 10 - Rizal)" required>
+        <button type="submit" class="green" style="width:100%; padding: 12px; font-size: 15px;">▶ Start Challenge</button>
+      </form>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+        <button type="button" class="discrete-link" id="open-teacher-login" style="display:inline-flex; align-items:center; gap:6px;">
+          <svg class="school-seal" width="18" height="18" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="98" fill="#7a0c14" />
+            <circle cx="100" cy="100" r="88" fill="#ffffff" />
+            <circle cx="100" cy="100" r="62" fill="none" stroke="#7a0c14" stroke-width="6" />
+            <path d="M 100,62 C 110,73 114,83 107,91 C 109,84 104,79 100,75 C 96,80 94,85 97,91 C 88,85 90,73 100,62 Z" fill="#7a0c14" />
+            <path d="M 60,98 Q 80,93 100,102 Q 120,93 140,98 L 146,128 Q 121,122 100,130 Q 79,122 54,128 Z" fill="#ffffff" stroke="#7a0c14" stroke-width="5" />
+            <text x="100" y="153" text-anchor="middle" fill="#7a0c14" font-family="Arial Black, sans-serif" font-size="18">1990</text>
+          </svg>
+          <span>Teacher Monitor</span>
+        </button>
+        <button type="button" class="discrete-link" id="guest-bypass">Quick Play</button>
+      </div>
+      <div style="margin-top: 12px; padding-top: 8px; border-top: 1px dashed #d6c394; font-size: 12px; font-weight: 900; color: #536a8a; letter-spacing: 0.4px;">
+        Made by Sir Nick 👨🏻‍🏫
+      </div>
+    </div>
+  </div>
+
+  <!-- Teacher Passcode Prompt Modal -->
+  <div class="modal" id="pass-modal">
+    <div class="podium" style="max-width: 360px;">
+      <div style="width:58px;height:58px;margin:0 auto 10px;">
+        <svg class="school-seal" width="58" height="58" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="100" cy="100" r="98" fill="#7a0c14" />
+          <circle cx="100" cy="100" r="88" fill="#ffffff" />
+          <circle cx="100" cy="100" r="62" fill="none" stroke="#7a0c14" stroke-width="5" />
+          <path d="M 100,62 C 110,73 114,83 107,91 C 109,84 104,79 100,75 C 96,80 94,85 97,91 C 88,85 90,73 100,62 Z" fill="#7a0c14" />
+          <path d="M 60,98 Q 80,93 100,102 Q 120,93 140,98 L 146,128 Q 121,122 100,130 Q 79,122 54,128 Z" fill="#ffffff" stroke="#7a0c14" stroke-width="4" />
+          <text x="100" y="153" text-anchor="middle" fill="#7a0c14" font-family="Arial Black, sans-serif" font-size="16">1990</text>
+        </svg>
+      </div>
+      <h2 style="font-size: 24px;">TEACHER ACCESS</h2>
+      <form id="pass-form" class="form-stack">
+        <input id="teacher-pass" type="password" placeholder="Enter passcode..." required>
+        <div id="pass-error" style="color:#c04c7b; font-size:12px; font-weight:900; min-height:16px;"></div>
+        <div class="buttons" style="justify-content: flex-end;">
+          <button type="button" class="blue" id="cancel-pass">Cancel</button>
+          <button type="submit" class="green">Unlock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Teacher Monitor Dashboard Modal -->
+  <div class="modal" id="teacher-modal">
+    <div class="teacher-panel">
+      <div class="teacher-top">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <svg class="school-seal" width="38" height="38" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="98" fill="#7a0c14" />
+            <circle cx="100" cy="100" r="88" fill="#ffffff" />
+            <circle cx="100" cy="100" r="62" fill="none" stroke="#7a0c14" stroke-width="5" />
+            <path d="M 100,62 C 110,73 114,83 107,91 C 109,84 104,79 100,75 C 96,80 94,85 97,91 C 88,85 90,73 100,62 Z" fill="#7a0c14" />
+            <path d="M 60,98 Q 80,93 100,102 Q 120,93 140,98 L 146,128 Q 121,122 100,130 Q 79,122 54,128 Z" fill="#ffffff" stroke="#7a0c14" stroke-width="4" />
+            <text x="100" y="153" text-anchor="middle" fill="#7a0c14" font-family="Arial Black, sans-serif" font-size="16">1990</text>
+          </svg>
+          <h2>LIVE SCORE MONITOR</h2>
+          <span class="badge done" id="cloud-status">● Connecting...</span>
+        </div>
+        <div class="teacher-filters">
+          <input type="text" id="filter-search" placeholder="Search Name or Section...">
+          <select id="filter-status" aria-label="Filter by status">
+            <option value="ALL">All Status</option>
+            <option value="Finished">Finished Only</option>
+            <option value="In Progress">Answering Only</option>
+          </select>
+          <button class="blue" id="refresh-records">🔄 Refresh</button>
+          <button class="blue" id="toggle-sync-setup">☁️ Google Sheet Sync</button>
+          <button class="green" id="export-csv">📥 Export CSV</button>
+          <button class="pink" id="clear-records">🗑️ Clear Records</button>
+          <button class="dark" id="close-teacher">✕ Close</button>
+        </div>
+      </div>
+
+      <!-- Optional Google Sheets Online Sync Panel -->
+      <div class="sync-box" id="sync-setup-panel">
+        <div class="sync-row">
+          <input type="text" id="webhook-url" placeholder="Paste Google Apps Script Web App URL (optional backup)...">
+          <button class="green" id="save-webhook">Save URL</button>
+          <button class="blue" id="copy-gas-code">📋 Copy Apps Script Code</button>
+        </div>
+        <p class="hint-note" id="sync-setup-msg">Live multi-device classroom monitoring is active! Every student who answers on their phone or PC appears here automatically. Optionally paste a Google Apps Script URL above to also log rows into Google Sheets.</p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Student Name</th>
+              <th>Grade &amp; Section</th>
+              <th>Score</th>
+              <th>Solved</th>
+              <th>Hints</th>
+              <th>Time Left</th>
+              <th>Status</th>
+              <th>Last Activity</th>
+            </tr>
+          </thead>
+          <tbody id="records-body">
+            <tr><td colspan="9" style="text-align:center; padding:24px; color:#61718a;">No student entries yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; font-weight:800; color:#46658c;">
+        <span id="total-students">0 Students (0 Finished • 0 Answering)</span>
+        <span id="last-sync-label">Live monitoring active</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Teacher Access Passcode & Storage Keys
+    const TEACHER_PASSCODE = "teacher123";
+    const STORAGE_KEY_RECORDS = "sdg_quest_student_records_v1";
+    const STORAGE_KEY_WEBHOOK = "sdg_quest_webhook_url_v1";
+
+    const GAS_TEMPLATE = `function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Timestamp", "Student ID", "Student Name", "Section", "Score", "Solved", "Hints", "Time Left", "Status"]);
+  }
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([new Date(), data.id, data.name, data.section, data.score, data.solvedCount + "/" + data.totalClues, data.hintsUsed, data.timeLeft, data.status]);
+  return ContentService.createTextOutput(JSON.stringify({ ok: true })).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+    // Safe in-memory + persistent storage helpers
+    const memoryFallback = {};
+    function safeGetItem(key) {
+      try {
+        return window.localStorage.getItem(key);
+      } catch (e) {
+        return memoryFallback[key] || null;
+      }
+    }
+    function safeSetItem(key, val) {
+      memoryFallback[key] = val;
+      try {
+        window.localStorage.setItem(key, val);
+      } catch (e) {}
+    }
+
+    function loadSavedRecords() {
+      try {
+        const raw = safeGetItem(STORAGE_KEY_RECORDS);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveAllRecords(list) {
+      safeSetItem(STORAGE_KEY_RECORDS, JSON.stringify(list));
+    }
+
+    // Student Session & Live Records State
+    let studentProfile = null;
+    const MAX_HINTS = 5;
+    let hintsUsed = 0;
+    let gameStatus = "In Progress";
+    let allRecords = loadSavedRecords();
+    let cloudRecords = [];
+    let webhookUrl = "https://script.google.com/macros/s/AKfycbwphtudNl8ER-PXMoq_Kwfy7t6GpL_puA1Q4SeQ6jZGSPwu7Jg7_pf347AjngpO3Uez/exec";
+    let isTeacherUnlocked = false;
+    let pendingRecordToSync = null;
+
+    // Live Cloud Classroom Sync (Firestore)
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'sdg-quest-default';
+    let db = null;
+    let auth = null;
+    let cloudUser = null;
+    let cloudConnected = false;
+
+    function mergeAllSources() {
+      const localList = loadSavedRecords();
+      const map = new Map();
+      localList.forEach(item => {
+        if (item && item.id) map.set(item.id, item);
+      });
+      cloudRecords.forEach(item => {
+        if (item && item.id) {
+          const existing = map.get(item.id);
+          if (!existing || (item.updatedAt || 0) >= (existing.updatedAt || 0)) {
+            map.set(item.id, item);
+          }
+        }
+      });
+      allRecords = Array.from(map.values());
+      saveAllRecords(allRecords);
+      if (isTeacherUnlocked) renderTeacherTable();
+    }
+
+    async function initCloudSync() {
+      try {
+        if (typeof __firebase_config === 'undefined' || !__firebase_config) {
+          updateSyncStatusUI();
+          return;
+        }
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          const cred = await signInWithCustomToken(auth, __initial_auth_token);
+          cloudUser = cred.user;
+        } else {
+          const cred = await signInAnonymously(auth);
+          cloudUser = cred.user;
+        }
+
+        cloudConnected = true;
+        updateSyncStatusUI();
+
+        // Listen to ALL student records in real time across every device
+        const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'crossword_scores');
+        onSnapshot(colRef, (snapshot) => {
+          const incoming = [];
+          snapshot.forEach((docSnap) => {
+            incoming.push({ id: docSnap.id, ...docSnap.data() });
+          });
+          cloudRecords = incoming;
+          mergeAllSources();
+          const lbl = document.getElementById('last-sync-label');
+          if (lbl) lbl.textContent = `Live synced • ${new Date().toLocaleTimeString()}`;
+        }, (err) => {
+          console.warn("Realtime monitor listener fallback:", err);
+          cloudConnected = false;
+          updateSyncStatusUI();
+        });
+
+        // Push any score recorded before auth completed
+        if (pendingRecordToSync) {
+          await pushRecordToCloud(pendingRecordToSync);
+          pendingRecordToSync = null;
+        }
+      } catch (err) {
+        console.warn("Cloud sync unavailable, using local fallback:", err);
+        cloudConnected = false;
+        updateSyncStatusUI();
+      }
+    }
+
+    async function pushRecordToCloud(record) {
+      if (!db || !cloudUser) {
+        pendingRecordToSync = record;
+        return;
+      }
+      try {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'crossword_scores', record.id);
+        await setDoc(docRef, record, { merge: true });
+      } catch (err) {
+        console.warn("Cloud write error:", err);
+      }
+    }
+
+    function updateSyncStatusUI() {
+      const badge = document.getElementById('cloud-status');
+      const dot = document.getElementById('sync-dot');
+      const hasUrl = Boolean(webhookUrl && webhookUrl.trim());
+      if (badge) {
+        if (cloudConnected) {
+          badge.textContent = '● Live Multi-Device Sync';
+          badge.style.background = '#7ce0a6';
+        } else if (hasUrl) {
+          badge.textContent = '● Sheet Sync Active';
+          badge.style.background = '#7ce0a6';
+        } else {
+          badge.textContent = '● Local Device Mode';
+          badge.style.background = '#ffd447';
+        }
+      }
+      if (dot) {
+        dot.style.background = (cloudConnected || hasUrl) ? '#66d69a' : '#ffd447';
+      }
+    }
+
+    function formatTime(sec) {
+      const m = String(Math.floor(Math.max(0, sec) / 60)).padStart(2, '0');
+      const s = String(Math.max(0, sec) % 60).padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    // Sync student's current score & progress in real time across devices
+    function syncStudentProgress(explicitStatus = null) {
+      if (!studentProfile) return;
+      if (explicitStatus) gameStatus = explicitStatus;
+
+      const record = {
+        id: studentProfile.id,
+        name: studentProfile.name,
+        section: studentProfile.section,
+        score: score,
+        solvedCount: solved.size,
+        totalClues: clues.length,
+        hintsUsed: hintsUsed,
+        timeLeft: formatTime(seconds),
+        secondsLeft: seconds,
+        status: gameStatus,
+        updatedAt: Date.now()
+      };
+
+      const localList = loadSavedRecords();
+      const existingIdx = localList.findIndex(r => r.id === record.id);
+      if (existingIdx >= 0) {
+        localList[existingIdx] = record;
+      } else {
+        localList.push(record);
+      }
+      saveAllRecords(localList);
+      mergeAllSources();
+
+      // Push live to Firestore so Teacher Monitor on any device sees it immediately
+      pushRecordToCloud(record);
+
+      if (webhookUrl && webhookUrl.trim()) {
+        try {
+          fetch(webhookUrl.trim(), {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(record)
+          }).catch(() => {});
+        } catch (err) {}
+      }
+    }
+
+    // 10 SDG Clues Data
+    const clues = [
+      { id: 0, number: 1, word: "NOPOVERTY", label: "No Poverty", clue: "Which goal aims to end poverty in all its forms everywhere?", dir: "A", r: 11, c: 11 },
+      { id: 1, number: 2, word: "CLEANENERGY", label: "Affordable and Clean Energy", clue: "Which goal supports access to reliable, sustainable, and modern energy?", dir: "D", r: 4, c: 16 },
+      { id: 2, number: 3, word: "LIFEBELOWWATER", label: "Life Below Water", clue: "Which goal aims to conserve oceans, seas, and marine resources?", dir: "A", r: 9, c: 11 },
+      { id: 3, number: 4, word: "DECENTWORK", label: "Decent Work and Economic Growth", clue: "Which goal promotes productive employment and decent work for all?", dir: "D", r: 4, c: 22 },
+      { id: 4, number: 5, word: "QUALITYEDUCATION", label: "Quality Education", clue: "Which goal works toward inclusive and equitable learning opportunities for everyone?", dir: "A", r: 7, c: 5 },
+      { id: 5, number: 6, word: "CLIMATEACTION", label: "Climate Action", clue: "Which goal calls for urgent action to combat climate change and its impacts?", dir: "D", r: 0, c: 7 },
+      { id: 6, number: 7, word: "CLEANWATER", label: "Clean Water and Sanitation", clue: "Which goal focuses on safe water, sanitation, and hygiene?", dir: "A", r: 9, c: 0 },
+      { id: 7, number: 8, word: "ZEROHUNGER", label: "Zero Hunger", clue: "Which goal focuses on ending hunger, improving nutrition, and supporting sustainable agriculture?", dir: "D", r: 7, c: 24 },
+      { id: 8, number: 9, word: "GENDEREQUALITY", label: "Gender Equality", clue: "Which goal promotes equal rights and opportunities for women and men?", dir: "A", r: 5, c: 18 },
+      { id: 9, number: 10, word: "GOODHEALTH", label: "Good Health and Well-Being", clue: "Which goal promotes healthy lives and well-being for people of all ages?", dir: "A", r: 1, c: 0 }
+    ];
+
+    // 17x32 Grid Layout
+    const layout = [
+      [null, null, null, null, null, null, null, { letter: "C", number: 6 }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      [{ letter: "G", number: 10 }, { letter: "O", number: null }, { letter: "O", number: null }, { letter: "D", number: null }, { letter: "H", number: null }, { letter: "E", number: null }, { letter: "A", number: null }, { letter: "L", number: null }, { letter: "T", number: null }, { letter: "H", number: null }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "I", number: null }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "M", number: null }, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "A", number: null }, null, null, null, null, null, null, null, null, { letter: "C", number: 2 }, null, null, null, null, null, { letter: "D", number: 4 }, null, null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "T", number: null }, null, null, null, null, null, null, null, null, { letter: "L", number: null }, null, { letter: "G", number: 9 }, { letter: "E", number: null }, { letter: "N", number: null }, { letter: "D", number: null }, { letter: "E", number: null }, { letter: "R", number: null }, { letter: "E", number: null }, { letter: "Q", number: null }, { letter: "U", number: null }, { letter: "A", number: null }, { letter: "L", number: null }, { letter: "I", number: null }, { letter: "T", number: null }, { letter: "Y", number: null }],
+      [null, null, null, null, null, null, null, { letter: "E", number: null }, null, null, null, null, null, null, null, null, { letter: "E", number: null }, null, null, null, null, null, { letter: "C", number: null }, null, null, null, null, null, null, null, null, null],
+      [null, null, null, null, null, { letter: "Q", number: 5 }, { letter: "U", number: null }, { letter: "A", number: null }, { letter: "L", number: null }, { letter: "I", number: null }, { letter: "T", number: null }, { letter: "Y", number: null }, { letter: "E", number: null }, { letter: "D", number: null }, { letter: "U", number: null }, { letter: "C", number: null }, { letter: "A", number: null }, { letter: "T", number: null }, { letter: "I", number: null }, { letter: "O", number: null }, { letter: "N", number: null }, null, { letter: "E", number: null }, null, { letter: "Z", number: 8 }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "C", number: null }, null, null, null, null, null, null, null, null, { letter: "N", number: null }, null, null, null, null, null, { letter: "N", number: null }, null, { letter: "E", number: null }, null, null, null, null, null, null, null],
+      [{ letter: "C", number: 7 }, { letter: "L", number: null }, { letter: "E", number: null }, { letter: "A", number: null }, { letter: "N", number: null }, { letter: "W", number: null }, { letter: "A", number: null }, { letter: "T", number: null }, { letter: "E", number: null }, { letter: "R", number: null }, null, { letter: "L", number: 3 }, { letter: "I", number: null }, { letter: "F", number: null }, { letter: "E", number: null }, { letter: "B", number: null }, { letter: "E", number: null }, { letter: "L", number: null }, { letter: "O", number: null }, { letter: "W", number: null }, { letter: "W", number: null }, { letter: "A", number: null }, { letter: "T", number: null }, { letter: "E", number: null }, { letter: "R", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "I", number: null }, null, null, null, null, null, null, null, null, { letter: "N", number: null }, null, null, null, null, null, { letter: "W", number: null }, null, { letter: "O", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "O", number: null }, null, null, null, { letter: "N", number: 1 }, { letter: "O", number: null }, { letter: "P", number: null }, { letter: "O", number: null }, { letter: "V", number: null }, { letter: "E", number: null }, { letter: "R", number: null }, { letter: "T", number: null }, { letter: "Y", number: null }, null, null, { letter: "O", number: null }, null, { letter: "H", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, { letter: "N", number: null }, null, null, null, null, null, null, null, null, { letter: "R", number: null }, null, null, null, null, null, { letter: "R", number: null }, null, { letter: "U", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { letter: "G", number: null }, null, null, null, null, null, { letter: "K", number: null }, null, { letter: "N", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { letter: "Y", number: null }, null, null, null, null, null, null, null, { letter: "G", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { letter: "E", number: null }, null, null, null, null, null, null, null],
+      [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, { letter: "R", number: null }, null, null, null, null, null, null, null]
+    ];
+
+    const rows = layout.length;
+    const cols = layout[0].length;
+    const gridEl = document.getElementById('grid');
+    const boardWrapEl = document.getElementById('board-wrap');
+    const pickEl = document.getElementById('pick');
+    const answerEl = document.getElementById('answer');
+    const mobileProxy = document.getElementById('mobile-proxy');
+
+    gridEl.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    gridEl.style.gridTemplateRows = `repeat(${rows}, minmax(0, 1fr))`;
+
+    // Dynamically size the 32x17 grid to fit inside .board-wrap cleanly without overflow
+    function fitGrid() {
+      if (!boardWrapEl || !gridEl) return;
+      const styles = getComputedStyle(boardWrapEl);
+      const padX = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight);
+      const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
+      const wrapW = Math.max(0, boardWrapEl.clientWidth - padX);
+      const wrapH = Math.max(0, boardWrapEl.clientHeight - padY);
+      if (!wrapW) return;
+
+      const aspect = cols / rows;
+      let targetW = wrapW;
+      let targetH = targetW / aspect;
+
+      if (wrapH > 0 && targetH > wrapH) {
+        targetH = wrapH;
+        targetW = targetH * aspect;
+      }
+
+      gridEl.style.width = `${Math.floor(targetW)}px`;
+      gridEl.style.height = `${Math.floor(targetH)}px`;
+    }
+
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(() => fitGrid());
+      ro.observe(boardWrapEl);
+    }
+    window.addEventListener('resize', fitGrid);
+    window.addEventListener('orientationchange', fitGrid);
+
+    // Core Game State & Cell-to-Clue Lookup Map
+    let solved = new Set();
+    let score = 0;
+    let seconds = 300;
+    let tick = null;
+    let soundOn = true;
+    let activeClueIdx = 0;
+    let cursor = { r: clues[0].r, c: clues[0].c };
+    let userGrid = Array.from({ length: rows }, () => Array(cols).fill(''));
+    let cellClues = Array.from({ length: rows }, () =>
+      Array.from({ length: cols }, () => ({ A: null, D: null }))
+    );
+
+    clues.forEach((clue, idx) => {
+      const dr = clue.dir === 'A' ? 0 : 1;
+      const dc = clue.dir === 'A' ? 1 : 0;
+      for (let k = 0; k < clue.word.length; k++) {
+        const rr = clue.r + dr * k;
+        const cc = clue.c + dc * k;
+        if (cellClues[rr] && cellClues[rr][cc]) {
+          cellClues[rr][cc][clue.dir] = idx;
+        }
+      }
+    });
+
+    let sharedAudioCtx = null;
+    function beep(freq = 550, dur = 0.12, type = 'sine') {
+      if (!soundOn) return;
+      try {
+        if (!sharedAudioCtx && (window.AudioContext || window.webkitAudioContext)) {
+          sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (!sharedAudioCtx) return;
+        if (sharedAudioCtx.state === 'suspended') {
+          sharedAudioCtx.resume();
+        }
+        const o = sharedAudioCtx.createOscillator();
+        const g = sharedAudioCtx.createGain();
+        o.type = type;
+        o.frequency.value = freq;
+        o.connect(g);
+        g.connect(sharedAudioCtx.destination);
+        g.gain.setValueAtTime(0.06, sharedAudioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, sharedAudioCtx.currentTime + dur);
+        o.start();
+        o.stop(sharedAudioCtx.currentTime + dur);
+      } catch (e) {}
+    }
+
+    function cellId(r, c) {
+      return `cell-${r}-${c}`;
+    }
+
+    // Build Grid DOM
+    layout.forEach((row, r) => {
+      row.forEach((cellData, c) => {
+        const el = document.createElement('div');
+        el.className = 'cell ' + (cellData ? '' : 'blank');
+        el.id = cellId(r, c);
+
+        if (cellData) {
+          el.setAttribute('tabindex', '0');
+          el.setAttribute('role', 'gridcell');
+          el.setAttribute('aria-label', `Row ${r + 1} Column ${c + 1}${cellData.number ? ', Clue ' + cellData.number : ''}`);
+
+          if (cellData.number) {
+            const numSpan = document.createElement('span');
+            numSpan.className = 'num';
+            numSpan.textContent = cellData.number;
+            el.appendChild(numSpan);
+          }
+
+          const valSpan = document.createElement('span');
+          valSpan.className = 'val';
+          valSpan.textContent = '';
+          el.appendChild(valSpan);
+
+          el.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleCellClick(r, c);
+          });
+        }
+
+        gridEl.appendChild(el);
+      });
+    });
+
+    // Populate Clue Dropdown
+    clues.forEach((x, i) => {
+      const o = document.createElement('option');
+      o.value = i;
+      o.textContent = `${x.number}. ${x.dir === 'A' ? 'Across' : 'Down'} (${x.word.length} letters)`;
+      pickEl.appendChild(o);
+    });
+
+    function getClueCells(clueIdx) {
+      const x = clues[clueIdx];
+      const dr = x.dir === 'A' ? 0 : 1;
+      const dc = x.dir === 'A' ? 1 : 0;
+      const coords = [];
+      for (let k = 0; k < x.word.length; k++) {
+        coords.push({ r: x.r + dr * k, c: x.c + dc * k });
+      }
+      return coords;
+    }
+
+    function isCellLocked(r, c) {
+      const map = cellClues[r][c];
+      return (map.A !== null && solved.has(map.A)) || (map.D !== null && solved.has(map.D));
+    }
+
+    function renderBoard() {
+      const activeClue = clues[activeClueIdx];
+      const activeCoords = new Set(getClueCells(activeClueIdx).map(pt => `${pt.r},${pt.c}`));
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (!layout[r][c]) continue;
+          const el = document.getElementById(cellId(r, c));
+          const valSpan = el.querySelector('.val');
+
+          if (valSpan.textContent !== userGrid[r][c]) {
+            valSpan.textContent = userGrid[r][c];
+          }
+
+          el.classList.toggle('word-active', activeCoords.has(`${r},${c}`));
+          el.classList.toggle('cursor', cursor.r === r && cursor.c === c);
+          el.classList.toggle('filled', isCellLocked(r, c));
+        }
+      }
+
+      pickEl.value = activeClueIdx;
+      document.getElementById('direction').textContent =
+        activeClue.dir === 'A' ? `#${activeClue.number} ACROSS` : `#${activeClue.number} DOWN`;
+      document.getElementById('clue').textContent = activeClue.clue;
+
+      if (document.activeElement !== answerEl) {
+        const currentWordLetters = getClueCells(activeClueIdx)
+          .map(pt => userGrid[pt.r][pt.c] || '')
+          .join('');
+        answerEl.value = currentWordLetters;
+      }
+    }
+
+    function handleCellClick(r, c) {
+      const map = cellClues[r][c];
+      const currentDir = clues[activeClueIdx].dir;
+
+      if (cursor.r === r && cursor.c === c && map.A !== null && map.D !== null) {
+        activeClueIdx = currentDir === 'A' ? map.D : map.A;
+      } else {
+        if (map[currentDir] !== null) {
+          activeClueIdx = map[currentDir];
+        } else if (map.A !== null) {
+          activeClueIdx = map.A;
+        } else if (map.D !== null) {
+          activeClueIdx = map.D;
+        }
+      }
+
+      cursor = { r, c };
+      beep(520, 0.05, 'sine');
+      renderBoard();
+
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      if (isTouch) {
+        mobileProxy.value = '';
+        mobileProxy.focus({ preventScroll: true });
+      } else {
+        document.getElementById(cellId(r, c)).focus({ preventScroll: true });
+      }
+    }
+
+    function selectClueFromDropdown() {
+      activeClueIdx = +pickEl.value;
+      const coords = getClueCells(activeClueIdx);
+      const firstEmpty = coords.find(pt => !userGrid[pt.r][pt.c]) || coords[0];
+      cursor = { r: firstEmpty.r, c: firstEmpty.c };
+      answerEl.value = '';
+      renderBoard();
+    }
+
+    pickEl.addEventListener('change', selectClueFromDropdown);
+
+    document.getElementById('toggle-dir').addEventListener('click', () => {
+      const map = cellClues[cursor.r][cursor.c];
+      if (map.A !== null && map.D !== null) {
+        const currentDir = clues[activeClueIdx].dir;
+        activeClueIdx = currentDir === 'A' ? map.D : map.A;
+        beep(580, 0.06);
+        renderBoard();
+      } else {
+        feedback('ℹ️ Only one word passes through this square.');
+      }
+    });
+
+    function moveCursorInWord(step, skipLocked = false) {
+      const coords = getClueCells(activeClueIdx);
+      const idx = coords.findIndex(pt => pt.r === cursor.r && pt.c === cursor.c);
+      if (idx === -1) return;
+      let nextIdx = idx + step;
+      if (skipLocked && step > 0) {
+        while (nextIdx < coords.length && isCellLocked(coords[nextIdx].r, coords[nextIdx].c)) {
+          nextIdx++;
+        }
+      }
+      if (nextIdx >= 0 && nextIdx < coords.length) {
+        cursor = { r: coords[nextIdx].r, c: coords[nextIdx].c };
+      }
+    }
+
+    function moveCursorByArrow(dr, dc) {
+      let nr = cursor.r + dr;
+      let nc = cursor.c + dc;
+      while (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+        if (layout[nr][nc]) {
+          cursor = { r: nr, c: nc };
+          const map = cellClues[nr][nc];
+          const preferredDir = dc !== 0 ? 'A' : 'D';
+          if (map[preferredDir] !== null) {
+            activeClueIdx = map[preferredDir];
+          } else if (map.A !== null) {
+            activeClueIdx = map.A;
+          } else if (map.D !== null) {
+            activeClueIdx = map.D;
+          }
+          renderBoard();
+          return;
+        }
+        nr += dr;
+        nc += dc;
+      }
+    }
+
+    function checkClueCompletion(clueIdx, triggeredByDirectTyping = false) {
+      if (solved.has(clueIdx)) return true;
+      const x = clues[clueIdx];
+      const coords = getClueCells(clueIdx);
+
+      const letters = coords.map(pt => userGrid[pt.r][pt.c]);
+      if (letters.some(ch => !ch)) return false;
+
+      const formedWord = letters.join('');
+      if (formedWord === x.word) {
+        solved.add(clueIdx);
+        score += 2;
+        updateStats();
+
+        coords.forEach(pt => {
+          const el = document.getElementById(cellId(pt.r, pt.c));
+          el.classList.remove('pop-anim');
+          void el.offsetWidth;
+          el.classList.add('pop-anim');
+        });
+
+        feedback(`🎉 Correct! "${x.label}" solved (+2 points)!`);
+        beep(660, 0.1);
+        setTimeout(() => beep(880, 0.16), 110);
+        renderBoard();
+        syncStudentProgress();
+
+        if (solved.size === clues.length) {
+          setTimeout(finish, 700);
+        }
+        return true;
+      } else if (triggeredByDirectTyping) {
+        coords.forEach(pt => {
+          const el = document.getElementById(cellId(pt.r, pt.c));
+          el.classList.remove('wrong-shake');
+          void el.offsetWidth;
+          el.classList.add('wrong-shake');
+        });
+        feedback('❌ Not quite right! Edit the highlighted letters or try again.');
+        beep(190, 0.18, 'sawtooth');
+      }
+      return false;
+    }
+
+    function checkAllIntersectingCluesForCoords(coords) {
+      const checked = new Set();
+      coords.forEach(pt => {
+        const map = cellClues[pt.r][pt.c];
+        if (map.A !== null && !checked.has(map.A)) {
+          checked.add(map.A);
+          checkClueCompletion(map.A, false);
+        }
+        if (map.D !== null && !checked.has(map.D)) {
+          checked.add(map.D);
+          checkClueCompletion(map.D, false);
+        }
+      });
+    }
+
+    function inputLetterToGrid(rawChar) {
+      const ch = rawChar.toUpperCase().replace(/[^A-Z]/g, '');
+      if (!ch) return;
+
+      const { r, c } = cursor;
+
+      if (!isCellLocked(r, c)) {
+        userGrid[r][c] = ch[0];
+        beep(620, 0.04, 'triangle');
+      } else {
+        beep(400, 0.04, 'sine');
+      }
+
+      const cellMap = cellClues[r][c];
+      checkClueCompletion(activeClueIdx, true);
+      const otherDir = clues[activeClueIdx].dir === 'A' ? 'D' : 'A';
+      if (cellMap[otherDir] !== null) {
+        checkClueCompletion(cellMap[otherDir], false);
+      }
+
+      moveCursorInWord(1, true);
+      renderBoard();
+    }
+
+    function handleGridBackspace() {
+      const { r, c } = cursor;
+
+      if (userGrid[r][c] && !isCellLocked(r, c)) {
+        userGrid[r][c] = '';
+        beep(340, 0.05);
+      } else {
+        moveCursorInWord(-1, false);
+        const prev = cursor;
+        if (userGrid[prev.r][prev.c] && !isCellLocked(prev.r, prev.c)) {
+          userGrid[prev.r][prev.c] = '';
+          beep(340, 0.05);
+        }
+      }
+      renderBoard();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const tag = document.activeElement ? document.activeElement.tagName : '';
+      if (document.activeElement === answerEl || tag === 'SELECT' || (tag === 'INPUT' && document.activeElement !== mobileProxy)) return;
+      if (document.querySelector('.modal.show')) return;
+
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        moveCursorByArrow(0, 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        moveCursorByArrow(0, -1);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        moveCursorByArrow(1, 0);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        moveCursorByArrow(-1, 0);
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        handleGridBackspace();
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        activeClueIdx = (activeClueIdx + (e.shiftKey ? -1 : 1) + clues.length) % clues.length;
+        const coords = getClueCells(activeClueIdx);
+        const firstEmpty = coords.find(pt => !userGrid[pt.r][pt.c]) || coords[0];
+        cursor = { r: firstEmpty.r, c: firstEmpty.c };
+        renderBoard();
+      } else if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
+        e.preventDefault();
+        inputLetterToGrid(e.key);
+      }
+    });
+
+    mobileProxy.addEventListener('input', () => {
+      const val = mobileProxy.value;
+      if (val) {
+        const lastChar = val.slice(-1);
+        inputLetterToGrid(lastChar);
+        mobileProxy.value = '';
+      }
+    });
+
+    function norm(s) {
+      return s.toUpperCase().replace(/[^A-Z]/g, '');
+    }
+
+    function updateStats() {
+      document.getElementById('score').textContent = score;
+      document.getElementById('bar').style.width = (solved.size / clues.length * 100) + '%';
+    }
+
+    function fillAnswerFromBox() {
+      const x = clues[activeClueIdx];
+      const v = norm(answerEl.value);
+
+      if (solved.has(activeClueIdx)) {
+        feedback('This answer is already completed!');
+        return;
+      }
+
+      if (v !== x.word) {
+        feedback('❌ Oops! Not quite. Check your spelling and try again!');
+        beep(170, 0.25, 'sawtooth');
+        return;
+      }
+
+      const coords = getClueCells(activeClueIdx);
+      coords.forEach((pt, idx) => {
+        userGrid[pt.r][pt.c] = x.word[idx];
+        const el = document.getElementById(cellId(pt.r, pt.c));
+        el.classList.remove('pop-anim');
+        void el.offsetWidth;
+        el.classList.add('pop-anim');
+      });
+
+      solved.add(activeClueIdx);
+      score += 2;
+      updateStats();
+      checkAllIntersectingCluesForCoords(coords);
+      renderBoard();
+      syncStudentProgress();
+      feedback(`🎉 Correct! "${x.label}" solved (+2 points)!`);
+      beep(660, 0.1);
+      setTimeout(() => beep(880, 0.16), 120);
+
+      if (solved.size === clues.length) {
+        setTimeout(finish, 700);
+      }
+    }
+
+    function feedback(t) {
+      document.getElementById('feedback').textContent = t;
+    }
+
+    document.getElementById('fill').addEventListener('click', fillAnswerFromBox);
+
+    answerEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        fillAnswerFromBox();
+      }
+    });
+
+    document.getElementById('clear').addEventListener('click', () => {
+      const coords = getClueCells(activeClueIdx);
+      let clearedAny = false;
+      coords.forEach(pt => {
+        if (!isCellLocked(pt.r, pt.c) && userGrid[pt.r][pt.c]) {
+          userGrid[pt.r][pt.c] = '';
+          clearedAny = true;
+        }
+      });
+      answerEl.value = '';
+      cursor = { r: coords[0].r, c: coords[0].c };
+      renderBoard();
+      if (clearedAny) {
+        feedback('🧹 Cleared unlocked letters in current word.');
+        beep(360, 0.06);
+      }
+      answerEl.focus();
+    });
+
+    // Reveal the exact letter in the focused cursor square (Limited to MAX_HINTS = 5)
+    const hintBtn = document.getElementById('hint');
+    function updateHintButton() {
+      const remaining = Math.max(0, MAX_HINTS - hintsUsed);
+      hintBtn.textContent = `💡 Hint (${remaining})`;
+      if (remaining === 0) {
+        hintBtn.disabled = true;
+        hintBtn.style.opacity = '0.5';
+        hintBtn.style.cursor = 'not-allowed';
+      } else {
+        hintBtn.disabled = false;
+        hintBtn.style.opacity = '1';
+        hintBtn.style.cursor = 'pointer';
+      }
+    }
+
+    hintBtn.addEventListener('click', () => {
+      if (hintsUsed >= MAX_HINTS) {
+        feedback('⚠️ No hints left! (Maximum of 5 hints per game)');
+        beep(190, 0.18, 'sawtooth');
+        return;
+      }
+
+      const { r, c } = cursor;
+      const correctLetter = layout[r][c] ? layout[r][c].letter : '';
+      if (!correctLetter) return;
+
+      if (userGrid[r][c] === correctLetter) {
+        feedback('💡 This square already has the right letter!');
+        moveCursorInWord(1, true);
+        renderBoard();
+        return;
+      }
+
+      userGrid[r][c] = correctLetter;
+      hintsUsed++;
+      updateHintButton();
+      beep(740, 0.09, 'sine');
+      const remaining = MAX_HINTS - hintsUsed;
+      feedback(`💡 Revealed "${correctLetter}"! (${remaining} hint${remaining === 1 ? '' : 's'} left)`);
+
+      const cellMap = cellClues[r][c];
+      checkClueCompletion(activeClueIdx, false);
+      const otherDir = clues[activeClueIdx].dir === 'A' ? 'D' : 'A';
+      if (cellMap[otherDir] !== null) {
+        checkClueCompletion(cellMap[otherDir], false);
+      }
+
+      moveCursorInWord(1, true);
+      renderBoard();
+      syncStudentProgress();
+    });
+
+    // Continuous Timer Controls
+    let isGameFinished = false;
+
+    function startTimer() {
+      if (tick || isGameFinished) return;
+      tick = setInterval(() => {
+        seconds--;
+        document.getElementById('timer').textContent = formatTime(seconds);
+        // Periodic heartbeat sync every 15s so teacher monitor shows live remaining time
+        if (seconds > 0 && seconds % 15 === 0) {
+          syncStudentProgress();
+        }
+        if (seconds <= 10 && seconds > 0) beep(440, 0.07);
+        if (seconds <= 0) {
+          clearInterval(tick);
+          tick = null;
+          finish();
+        }
+      }, 1000);
+      feedback('');
+      beep(700, 0.1);
+    }
+
+    document.getElementById('sound').addEventListener('click', (e) => {
+      soundOn = !soundOn;
+      e.target.textContent = soundOn ? '🔊 Sound' : '🔇 Muted';
+      if (soundOn) beep(600, 0.1);
+    });
+
+    function resetGameForNewStudent() {
+      if (tick) {
+        clearInterval(tick);
+        tick = null;
+      }
+      solved = new Set();
+      score = 0;
+      seconds = 300;
+      hintsUsed = 0;
+      gameStatus = "In Progress";
+      isGameFinished = false;
+      activeClueIdx = 0;
+      cursor = { r: clues[0].r, c: clues[0].c };
+      userGrid = Array.from({ length: rows }, () => Array(cols).fill(''));
+      studentProfile = null;
+
+      document.getElementById('timer').textContent = '05:00';
+      document.getElementById('student-pill').style.display = 'none';
+      document.getElementById('stu-name').value = '';
+      document.getElementById('stu-section').value = '';
+      answerEl.value = '';
+      feedback('');
+      updateStats();
+      updateHintButton();
+      renderBoard();
+
+      document.getElementById('modal').classList.remove('show');
+      document.getElementById('login-modal').classList.add('show');
+    }
+
+    document.getElementById('new-student-btn').addEventListener('click', resetGameForNewStudent);
+    document.getElementById('play-again-btn').addEventListener('click', resetGameForNewStudent);
+
+    function exitWebsite() {
+      try {
+        window.open('', '_self');
+        window.close();
+      } catch (e) {}
+
+      document.body.innerHTML = `
+        <div style="width:100vw;height:100vh;display:grid;place-items:center;padding:24px;text-align:center;background:linear-gradient(135deg,#102347,#1b3d6c);color:#fff;font-family:'Trebuchet MS',Arial,sans-serif;">
+          <div style="background:#fff9e9;color:#1b3155;padding:34px 28px;border-radius:24px;max-width:440px;width:100%;box-shadow:0 10px 0 #b58b35;">
+            <div style="width:68px;height:68px;margin:0 auto 10px;">
+              <svg viewBox="0 0 120 120" width="68" height="68" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="60" cy="60" r="58" fill="#ffffff"/>
+                <g id="sdg-wheel-exit"></g>
+                <circle cx="60" cy="60" r="29" fill="#ffffff"/>
+                <text x="60" y="63" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="13" fill="#1c75bc">SDG</text>
+              </svg>
+            </div>
+            <h2 style="margin:0 0 10px;font-size:26px;color:#14264b;">Session Completed</h2>
+            <p style="margin:0;font-size:15px;font-weight:800;color:#46658c;line-height:1.5;">Your score has been recorded.<br>You may now close this tab.</p>
+          </div>
+        </div>
+      `;
+      renderSdgWheelLogo('sdg-wheel-exit');
+    }
+
+    function finish() {
+      if (isGameFinished) return;
+      isGameFinished = true;
+      if (tick) {
+        clearInterval(tick);
+        tick = null;
+      }
+      syncStudentProgress("Finished");
+      document.getElementById('finaltext').textContent =
+        `${studentProfile ? studentProfile.name + ', y' : 'Y'}ou solved ${solved.size} out of ${clues.length} clues and earned ${score} out of 20 points!`;
+      document.getElementById('modal').classList.add('show');
+      beep(700, 0.15);
+      setTimeout(() => beep(900, 0.2), 180);
+    }
+
+    document.getElementById('finish').addEventListener('click', finish);
+    document.getElementById('exit-game').addEventListener('click', exitWebsite);
+
+    // Student Login Flow
+    function launchStudentSession(nameInput, sectionInput) {
+      const baseSlug = `${sectionInput}_${nameInput}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '') || 'student';
+      const sessionSuffix = Math.random().toString(36).slice(2, 6);
+      const cleanId = `${baseSlug}_${sessionSuffix}`;
+
+      studentProfile = {
+        id: cleanId,
+        name: nameInput,
+        section: sectionInput
+      };
+
+      document.getElementById('student-label').textContent = `${nameInput} (${sectionInput})`;
+      document.getElementById('student-pill').style.display = 'flex';
+      document.getElementById('login-modal').classList.remove('show');
+
+      activeClueIdx = 0;
+      cursor = { r: clues[0].r, c: clues[0].c };
+      renderBoard();
+      fitGrid();
+      syncStudentProgress("In Progress");
+      startTimer();
+
+      const firstCell = document.getElementById(cellId(cursor.r, cursor.c));
+      if (firstCell) firstCell.focus({ preventScroll: true });
+    }
+
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nameInput = document.getElementById('stu-name').value.trim();
+      const sectionInput = document.getElementById('stu-section').value.trim();
+      if (!nameInput || !sectionInput) return;
+      launchStudentSession(nameInput, sectionInput);
+    });
+
+    document.getElementById('guest-bypass').addEventListener('click', () => {
+      launchStudentSession('Guest Student', 'Practice');
+    });
+
+    // Teacher Access & Monitor Dashboard
+    async function refreshAllStudentRecords() {
+      if (db && cloudUser) {
+        try {
+          const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'crossword_scores');
+          const snap = await getDocs(colRef);
+          const fresh = [];
+          snap.forEach((docSnap) => fresh.push({ id: docSnap.id, ...docSnap.data() }));
+          cloudRecords = fresh;
+        } catch (err) {}
+      }
+      mergeAllSources();
+      const lbl = document.getElementById('last-sync-label');
+      if (lbl) lbl.textContent = `Updated • ${new Date().toLocaleTimeString()}`;
+    }
+
+    function openTeacherAccess() {
+      if (isTeacherUnlocked) {
+        refreshAllStudentRecords();
+        document.getElementById('teacher-modal').classList.add('show');
+      } else {
+        document.getElementById('pass-error').textContent = '';
+        document.getElementById('teacher-pass').value = '';
+        document.getElementById('pass-modal').classList.add('show');
+        setTimeout(() => document.getElementById('teacher-pass').focus(), 50);
+      }
+    }
+
+    document.getElementById('open-teacher-login').addEventListener('click', openTeacherAccess);
+    document.getElementById('open-teacher-hdr').addEventListener('click', openTeacherAccess);
+
+    document.getElementById('cancel-pass').addEventListener('click', () => {
+      document.getElementById('pass-modal').classList.remove('show');
+    });
+
+    document.getElementById('pass-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const entered = document.getElementById('teacher-pass').value;
+      if (entered === TEACHER_PASSCODE) {
+        isTeacherUnlocked = true;
+        document.getElementById('pass-modal').classList.remove('show');
+        refreshAllStudentRecords();
+        document.getElementById('teacher-modal').classList.add('show');
+      } else {
+        document.getElementById('pass-error').textContent = 'Incorrect passcode.';
+        beep(180, 0.2, 'sawtooth');
+      }
+    });
+
+    document.getElementById('refresh-records').addEventListener('click', () => {
+      beep(620, 0.08);
+      refreshAllStudentRecords();
+    });
+
+    document.getElementById('close-teacher').addEventListener('click', () => {
+      document.getElementById('teacher-modal').classList.remove('show');
+    });
+
+    document.getElementById('toggle-sync-setup').addEventListener('click', () => {
+      const box = document.getElementById('sync-setup-panel');
+      box.classList.toggle('open');
+      document.getElementById('webhook-url').value = webhookUrl;
+    });
+
+    document.getElementById('save-webhook').addEventListener('click', () => {
+      webhookUrl = document.getElementById('webhook-url').value.trim();
+      safeSetItem(STORAGE_KEY_WEBHOOK, webhookUrl);
+      updateSyncStatusUI();
+      document.getElementById('sync-setup-msg').textContent = webhookUrl
+        ? '✅ Sync URL saved! Student scores will also post directly to your Google Sheet.'
+        : 'ℹ️ Sync URL cleared. Using live cloud & local device storage.';
+    });
+
+    document.getElementById('copy-gas-code').addEventListener('click', () => {
+      const tempArea = document.createElement('textarea');
+      tempArea.value = GAS_TEMPLATE;
+      tempArea.style.position = 'fixed';
+      tempArea.style.opacity = '0';
+      document.body.appendChild(tempArea);
+      tempArea.select();
+      try {
+        document.execCommand('copy');
+        document.getElementById('sync-setup-msg').textContent = '📋 Google Apps Script code copied! Paste it into Extensions > Apps Script in Google Sheets and deploy as Web App.';
+      } catch (err) {
+        document.getElementById('sync-setup-msg').textContent = 'Unable to auto-copy.';
+      }
+      document.body.removeChild(tempArea);
+    });
+
+    document.getElementById('filter-search').addEventListener('input', renderTeacherTable);
+    document.getElementById('filter-status').addEventListener('change', renderTeacherTable);
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY_RECORDS && isTeacherUnlocked) {
+        mergeAllSources();
+      }
+    });
+
+    function escapeHtml(str) {
+      return String(str || '').replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[m]));
+    }
+
+    function renderTeacherTable() {
+      const query = document.getElementById('filter-search').value.trim().toLowerCase();
+      const statusFilter = document.getElementById('filter-status').value;
+      const tbody = document.getElementById('records-body');
+
+      const sorted = [...allRecords].sort((a, b) => {
+        if ((b.score || 0) !== (a.score || 0)) return (b.score || 0) - (a.score || 0);
+        if ((b.solvedCount || 0) !== (a.solvedCount || 0)) return (b.solvedCount || 0) - (a.solvedCount || 0);
+        return (b.updatedAt || 0) - (a.updatedAt || 0);
+      });
+
+      const filtered = sorted.filter(r => {
+        const matchesQuery = !query ||
+          (r.name || '').toLowerCase().includes(query) ||
+          (r.section || '').toLowerCase().includes(query);
+        const matchesStatus = statusFilter === 'ALL' || (r.status || 'In Progress') === statusFilter;
+        return matchesQuery && matchesStatus;
+      });
+
+      const finishedCount = filtered.filter(r => r.status === 'Finished').length;
+      const activeCount = filtered.length - finishedCount;
+      document.getElementById('total-students').textContent =
+        `${filtered.length} Student${filtered.length === 1 ? '' : 's'} (${finishedCount} Finished • ${activeCount} Answering)`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:24px; color:#61718a;">No matching student entries yet.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map((r, index) => {
+        const isDone = r.status === 'Finished';
+        const timeStr = r.updatedAt ? new Date(r.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
+        return `
+          <tr>
+            <td><strong>#${index + 1}</strong></td>
+            <td><strong>${escapeHtml(r.name)}</strong></td>
+            <td>${escapeHtml(r.section)}</td>
+            <td><strong>${r.score ?? 0}</strong> / 20</td>
+            <td>${r.solvedCount ?? 0} / ${r.totalClues ?? 10}</td>
+            <td>${r.hintsUsed ?? 0} / ${MAX_HINTS}</td>
+            <td>${escapeHtml(r.timeLeft || '05:00')}</td>
+            <td><span class="badge ${isDone ? 'done' : 'live'}">${escapeHtml(isDone ? 'Finished' : 'Answering')}</span></td>
+            <td style="color:#536a8a; font-size:12px;">${escapeHtml(timeStr)}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Export Table to Excel-Compatible CSV
+    document.getElementById('export-csv').addEventListener('click', () => {
+      const sorted = [...allRecords].sort((a, b) => (b.score || 0) - (a.score || 0));
+      if (sorted.length === 0) return;
+      const headers = ["Rank", "Student Name", "Grade & Section", "Score", "Solved Clues", "Hints Used", "Time Left", "Status", "Last Updated"];
+      const rowsCsv = sorted.map((r, idx) => [
+        idx + 1,
+        `"${(r.name || '').replace(/"/g, '""')}"`,
+        `"${(r.section || '').replace(/"/g, '""')}"`,
+        r.score ?? 0,
+        `${r.solvedCount ?? 0}/${r.totalClues ?? 10}`,
+        r.hintsUsed ?? 0,
+        `"${r.timeLeft || '05:00'}"`,
+        `"${r.status || 'In Progress'}"`,
+        `"${r.updatedAt ? new Date(r.updatedAt).toLocaleString() : ''}"`
+      ].join(','));
+
+      const csvContent = "\uFEFF" + [headers.join(','), ...rowsCsv].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SDG_Quest_Scores_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Clear All Records (Two-step confirmation without browser confirm())
+    let clearArmed = false;
+    let clearTimeoutId = null;
+    document.getElementById('clear-records').addEventListener('click', async (e) => {
+      const btn = e.target;
+      if (!clearArmed) {
+        clearArmed = true;
+        btn.textContent = '⚠ Click to Confirm';
+        clearTimeoutId = setTimeout(() => {
+          clearArmed = false;
+          btn.textContent = '🗑️ Clear Records';
+        }, 3500);
+        return;
+      }
+
+      clearTimeout(clearTimeoutId);
+      clearArmed = false;
+      btn.textContent = '🗑️ Clear Records';
+
+      if (db && cloudUser) {
+        try {
+          const colRef = collection(db, 'artifacts', appId, 'public', 'data', 'crossword_scores');
+          const snap = await getDocs(colRef);
+          const deletions = [];
+          snap.forEach((docSnap) => deletions.push(deleteDoc(docSnap.ref)));
+          await Promise.all(deletions);
+        } catch (err) {}
+      }
+
+      cloudRecords = [];
+      allRecords = [];
+      saveAllRecords([]);
+      renderTeacherTable();
+    });
+
+    // Render 17-Segment SDG Wheel Logo
+    function renderSdgWheelLogo(targetId) {
+      const target = document.getElementById(targetId);
+      if (!target) return;
+      const sdgColors = [
+        "#E5243B", "#DDA63A", "#4C9F38", "#C5192D", "#FF3A21",
+        "#26BDE2", "#FCC30B", "#A21942", "#FD6925", "#DD1367",
+        "#FD9D24", "#BF8B2E", "#3F7E44", "#0A97D9", "#56C02B",
+        "#00689D", "#19486A"
+      ];
+      const cx = 60, cy = 60, rOuter = 55, rInner = 31;
+      const total = sdgColors.length;
+      const gapDeg = 1.4;
+      const stepDeg = 360 / total;
+      let paths = "";
+
+      for (let i = 0; i < total; i++) {
+        const startDeg = -90 + i * stepDeg + gapDeg / 2;
+        const endDeg = -90 + (i + 1) * stepDeg - gapDeg / 2;
+        const sRad = (startDeg * Math.PI) / 180;
+        const eRad = (endDeg * Math.PI) / 180;
+
+        const x1 = (cx + rOuter * Math.cos(sRad)).toFixed(2);
+        const y1 = (cy + rOuter * Math.sin(sRad)).toFixed(2);
+        const x2 = (cx + rOuter * Math.cos(eRad)).toFixed(2);
+        const y2 = (cy + rOuter * Math.sin(eRad)).toFixed(2);
+        const x3 = (cx + rInner * Math.cos(eRad)).toFixed(2);
+        const y3 = (cy + rInner * Math.sin(eRad)).toFixed(2);
+        const x4 = (cx + rInner * Math.cos(sRad)).toFixed(2);
+        const y4 = (cy + rInner * Math.sin(sRad)).toFixed(2);
+
+        paths += `<path d="M ${x1} ${y1} A ${rOuter} ${rOuter} 0 0 1 ${x2} ${y2} L ${x3} ${y3} A ${rInner} ${rInner} 0 0 0 ${x4} ${y4} Z" fill="${sdgColors[i]}"/>`;
+      }
+      target.innerHTML = paths;
+    }
+
+    renderSdgWheelLogo('sdg-wheel-header');
+    renderSdgWheelLogo('sdg-wheel-login');
+    initCloudSync();
+    updateSyncStatusUI();
+    updateStats();
+    renderBoard();
+    fitGrid();
+    requestAnimationFrame(fitGrid);
+  </script>
+</body>
+</html>
